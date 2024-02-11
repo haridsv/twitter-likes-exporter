@@ -1,5 +1,6 @@
 import json
 import requests
+from pathlib import Path
 
 from tweet_parser import TweetParser
 
@@ -8,12 +9,13 @@ class TweetDownloader():
     def __init__(self):
         # Load in user specific data from config.json file
         with open("config.json") as json_data_file:
-            config_data = json.load(json_data_file)
-            self.twitter_user_id = config_data.get('USER_ID')
-            self.header_authorization = config_data.get('HEADER_AUTHORIZATION')
-            self.header_cookie = config_data.get('HEADER_COOKIES')
-            self.header_csrf = config_data.get('HEADER_CSRF')
-            self.output_json_file_path = config_data.get('OUTPUT_JSON_FILE_PATH')
+            self.config_data = json.load(json_data_file)
+            self.twitter_user_id = self.config_data.get('USER_ID')
+            self.header_authorization = self.config_data.get('HEADER_AUTHORIZATION')
+            self.header_cookie = self.config_data.get('HEADER_COOKIES')
+            self.header_csrf = self.config_data.get('HEADER_CSRF')
+            self.output_json_file_path = Path(self.config_data.get('OUTPUT_JSON_FILE_PATH'))
+            self.tweet_stop_id = self.config_data.get("TWEET_STOP_ID")
 
     def retrieve_all_likes(self):
         all_tweets = []
@@ -26,20 +28,47 @@ class TweetDownloader():
         while likes_page and page_cursor and page_cursor != old_page_cursor:
             print(f"Fetching likes page: {current_page}...")
             current_page += 1
+            stop = False
             for raw_tweet in likes_page:
                 try:
                     tweet_parser = TweetParser(raw_tweet)
+                    if self.tweet_stop_id and tweet_parser.tweet_id == str(self.tweet_stop_id):
+                        stop = True
+                        break
                     if tweet_parser.is_valid_tweet:
                         all_tweets.append(tweet_parser.tweet_as_json())
                 except KeyError:
                     # TODO: We should have an option to dump such tweet structures.
                     pass # Ignore tweets that are not of interest to us.
+            if stop:
+                break
             old_page_cursor = page_cursor
             likes_page = self.retrieve_likes_page(cursor=page_cursor)
             page_cursor = self.get_cursor(likes_page)
 
-        with open(self.output_json_file_path, 'w') as f:
-            f.write(json.dumps(all_tweets))
+        if all_tweets:
+            output_file = self.output_json_file_path
+            if output_file.exists():
+                parent_dir = output_file.parent
+                name_toks = output_file.stem.split(".")
+                num_tok = len(name_toks) > 1 and name_toks[-1].isnumeric() and name_toks[-1] or None
+                next_num = num_tok and int(num_tok) or 0
+                base_name_toks = num_tok and name_toks[:-1] or name_toks
+                while True:
+                    next_num += 1
+                    output_file = Path(parent_dir, ".".join(base_name_toks + [str(next_num)]) + output_file.suffix)
+                    if not output_file.exists():
+                        break
+            with open(output_file, 'w') as f:
+                f.write(json.dumps(all_tweets))
+            print(f'Done. JSON with {len(all_tweets)} liked tweets saved to: {output_file}')
+
+            self.config_data["TWEET_STOP_ID"] = all_tweets[0]["tweet_id"]
+            with open("config.json", "w") as fout:
+                json.dump(self.config_data, fout, sort_keys=True, indent=4)
+
+        else:
+            print("No new tweets found")
 
     def retrieve_likes_page(self, cursor=None):
         likes_url = 'https://api.twitter.com/graphql/QK8AVO3RpcnbLPKXLAiVog/Likes'
@@ -119,4 +148,3 @@ if __name__ == '__main__':
     downloader = TweetDownloader()
     print(f'Starting retrieval of likes for Twitter user {downloader.twitter_user_id}...')
     downloader.retrieve_all_likes()
-    print(f'Done. Likes JSON saved to: {downloader.output_json_file_path}')

@@ -131,6 +131,7 @@ dmypy.json
 # Vim swap files
 .*.sw*
 
-liked_tweets.json
+*.json
+*.yaml
 config.json
 tweet_likes_html

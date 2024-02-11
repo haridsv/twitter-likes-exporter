@@ -65,6 +65,12 @@ The output JSON will be a list of dictionaries like the following:
 ]
 ```
 
+#### Incremental download
+
+Every time the `download_tweets.py` is successfully run, the last Tweet ID is saved to `config.json` and in a subsequent run gets used as the "Stop ID", which means retrieval stops when this ID is found in the feed. Assuming the tweet was never
+unliked, this works like incremental retrieval such that you can run periodically and not download those tweets that have already been downloaded before. These incremental downloads are also saved as separate files with a numeric suffix (e.g.,
+`Liked_tweets.2.json`, `Liked_tweets.3.json` etc.) and avoid overwriting an existing file. To enable downloading all liked tweets again, edit `config.json` and set the `TWEET_STOP_ID` to `null` before retriggering the download.
+
 
 ### Convert JSON Likes to HTML
 
