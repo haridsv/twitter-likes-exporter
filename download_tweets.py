@@ -32,11 +32,12 @@ class TweetDownloader():
             for raw_tweet in likes_page:
                 try:
                     tweet_parser = TweetParser(raw_tweet)
-                    if self.tweet_stop_id and tweet_parser.tweet_id == str(self.tweet_stop_id):
-                        stop = True
-                        break
                     if tweet_parser.is_valid_tweet:
-                        all_tweets.append(tweet_parser.tweet_as_json())
+                        if self.tweet_stop_id and tweet_parser.tweet_id == str(self.tweet_stop_id):
+                            stop = True
+                            break
+                        else:
+                            all_tweets.append(tweet_parser.tweet_as_json())
                 except KeyError:
                     # TODO: We should have an option to dump such tweet structures.
                     pass # Ignore tweets that are not of interest to us.
