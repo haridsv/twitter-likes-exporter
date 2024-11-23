@@ -20,8 +20,8 @@ pip install -r requirements.txt
 
 1. Open up your web browser and ensure the Network web debugging tab is open so you can inspect network requests (in Chrome, it is under `Open Chrome Developer Console` `>` `Network`)
 2. Navigate to `https://twitter.com/<your_user_handle>/likes`
-3. Look for a network request to an `api.twitter.com` domain path ending in `/Likes` (you can type `/likes` in the filter box at the top left of the debug console). You need to find `userId`, `authorization`, `cookie` and `x-csrf-token` values from the network request and fill the corresponding fields in `config.json`.
-4. From the request headers, copy paste the following details (you can right click on the request and select `Copy` `>` `Copy as cURL` and paste into an editor window for the ease of finding these details):
+3. Look for a network request to an `api.twitter.com` domain path ending in `/Likes` (you can type `/likes` in the filter box at the top left of the debug console to find it quickly).
+4. From the request headers, find `userId`, `authorization`, `cookie` and `x-csrf-token` values and fill the corresponding fields in `config.json` (you can right click on the request and select `Copy` `>` `Copy as cURL` and paste into an editor window for the ease of finding these details):
     a. Copy the `Authorization` value (find it as `authorization: Bearer xxx`) and save as `HEADER_AUTHORIZATION` in `config.json`
     b. Copy the `Cookies` value (find it as `cookie: xxx`) and save as `HEADER_COOKIES` in `config.json`. Note that while pasting cookie value, you would need to escape any existing double quotes by prefixing them with a backslash (`\`).
     c. Copy the `x-csrf-token` (find it as `x-csrf-token: xxx`) value and save as `HEADER_CSRF` in `config.json`
@@ -63,6 +63,15 @@ The output JSON will be a list of dictionaries like the following:
       "tweet_created_at": "Sun Mar 13 15:16:45 +0000 2011"
    }
 ]
+```
+
+You can optionally convert the file into YAML for the ease of viewing.
+
+```
+> import json, yaml
+> with open("liked_tweets.1.json") as fin:
+>    with open("liked_tweets.1.yaml", "w") as fout:
+>        yaml.dump(json.load(fin), fout)
 ```
 
 #### Incremental download
